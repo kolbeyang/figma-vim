@@ -5,6 +5,7 @@ const { x, y, width } = figma.viewport.bounds;
 figma.showUI(__html__, {
   width: UI_WIDTH,
   height: UI_HEIGHT,
+  themeColors: true,
   position: {
     x: x + width / 2 - UI_WIDTH / 2,
     y: y + 10,
