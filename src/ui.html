@@ -5,21 +5,23 @@
 <body class="h-full font-mono text-xs text-figma-text overflow-hidden">
 
 <div class="plugin-shell flex flex-col w-full h-full">
-  <div class="command-bar relative flex items-center justify-between shrink-0">
-    <input
-      id="input"
-      type="text"
-      placeholder="..."
-      autofocus
-      class="command-input h-full font-mono outline-none flex-1 min-w-0 caret-transparent"
-    />
-    <div id="caret" class="block-caret absolute pointer-events-none animate-blink"></div>
-    <button
-      id="help-btn"
-      type="button"
-      title="Commands"
-      class="help-button shrink-0 flex items-center justify-center rounded-full cursor-pointer select-none"
-    ><span class="help-button-inner flex items-center justify-center rounded-full">?</span></button>
+  <div id="input-container" class="input-container">
+    <div class="command-bar relative flex items-center justify-between shrink-0">
+      <input
+        id="input"
+        type="text"
+        placeholder="..."
+        autofocus
+        class="command-input h-full font-mono outline-none flex-1 min-w-0 caret-transparent"
+      />
+      <div id="caret" class="block-caret absolute pointer-events-none animate-blink"></div>
+      <button
+        id="help-btn"
+        type="button"
+        title="Commands"
+        class="help-button shrink-0 flex items-center justify-center rounded-full cursor-pointer select-none"
+      ><span class="help-button-inner flex items-center justify-center rounded-full">?</span></button>
+    </div>
   </div>
 
   <div id="help-wrap" class="hidden flex flex-col flex-1 min-h-0">
@@ -33,6 +35,7 @@ const caret = document.getElementById('caret');
 const helpBtn = document.getElementById('help-btn');
 const help = document.getElementById('help');
 const helpWrap = document.getElementById('help-wrap');
+const inputContainer = document.getElementById('input-container');
 
 // --- Terminal-style block caret ---
 const measureCanvas = document.createElement('canvas');
@@ -225,6 +228,7 @@ function isHelpOpen() {
 function openHelp() {
   if (isHelpOpen()) return;
   helpOpen = true;
+  inputContainer.classList.add('help-open');
   helpWrap.classList.remove('hidden');
   help.scrollTop = 0;
   animateWindow(HELP_WIDTH, HELP_HEIGHT, () => {
@@ -237,7 +241,10 @@ function closeHelp() {
   if (!isHelpOpen()) return;
   helpOpen = false;
   animateWindow(BASE_WIDTH, BASE_HEIGHT, () => {
-    if (!helpOpen) helpWrap.classList.add('hidden');
+    if (!helpOpen) {
+      helpWrap.classList.add('hidden');
+      inputContainer.classList.remove('help-open');
+    }
   });
   refreshCaret();
 }

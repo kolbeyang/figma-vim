@@ -20,9 +20,23 @@ body {
 }
 
 .plugin-shell {
-  padding: 2px;
+  overflow: hidden;
   border-radius: 0 0 12px 12px;
+  background: #2c2c2c;
+}
+
+.input-container {
+  flex-shrink: 0;
+  padding: 2px;
   background: #3e3e3e;
+}
+
+.input-container.help-open {
+  background: linear-gradient(to bottom, #3e3e3e, #2c2c2c);
+}
+
+#help-wrap {
+  background: #2c2c2c;
 }
 
 .command-bar {
