@@ -2,24 +2,24 @@
 <head>
 <style>/* __INJECT_CSS__ */</style>
 </head>
-<body class="h-full font-mono text-xs text-figma-text bg-figma-bg overflow-hidden">
+<body class="h-full font-mono text-xs text-figma-text overflow-hidden">
 
-<div class="flex flex-col w-full h-full">
-  <div class="relative flex items-center shrink-0 h-10">
+<div class="plugin-shell flex flex-col w-full h-full">
+  <div class="command-bar relative flex items-center justify-between shrink-0">
     <input
       id="input"
       type="text"
       placeholder="..."
       autofocus
-      class="px-3 h-full font-mono text-base outline-none bg-figma-bg flex-1 min-w-0 text-neutral-400 caret-transparent"
+      class="command-input h-full font-mono outline-none flex-1 min-w-0 caret-transparent"
     />
-    <div id="caret" class="absolute top-1/2 -translate-y-1/2 translate-x-[2px] pointer-events-none bg-neutral-400 animate-blink font-mono text-base w-[1ch] h-[1.2em]"></div>
+    <div id="caret" class="block-caret absolute pointer-events-none animate-blink"></div>
     <button
       id="help-btn"
       type="button"
       title="Commands"
-      class="shrink-0 mr-2 flex items-center justify-center w-5 h-5 rounded-full border border-figma-border text-figma-text-tertiary hover:text-figma-text hover:bg-figma-bg-secondary cursor-pointer text-[11px] leading-none select-none"
-    >?</button>
+      class="help-button shrink-0 flex items-center justify-center rounded-full cursor-pointer select-none"
+    ><span class="help-button-inner flex items-center justify-center rounded-full">?</span></button>
   </div>
 
   <!-- The border lives on the wrapper so the scroll fade cannot mask it -->
@@ -56,7 +56,7 @@ function updateCaret() {
   const textWidth = measureCtx.measureText(textBefore).width;
 
   const paddingLeft = parseFloat(getComputedStyle(input).paddingLeft);
-  caret.style.left = (paddingLeft + textWidth) + 'px';
+  caret.style.left = (input.offsetLeft + paddingLeft + textWidth) + 'px';
 }
 
 // Reset blink animation on any activity so caret stays solid while moving
@@ -119,8 +119,8 @@ const SORTED_COMMANDS = [...COMMANDS].sort((a, b) => b.prefix.length - a.prefix.
 // --- Help popover ---
 const HELP_WIDTH = 300;
 const HELP_HEIGHT = 360;
-const BASE_WIDTH = 120;
-const BASE_HEIGHT = 40;
+const BASE_WIDTH = 124;
+const BASE_HEIGHT = 38;
 
 function renderHelp() {
   const rows = [...COMMANDS, ...KEYS];

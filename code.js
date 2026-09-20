@@ -1,5 +1,5 @@
-const UI_WIDTH = 120;
-const UI_HEIGHT = 40;
+const UI_WIDTH = 124;
+const UI_HEIGHT = 38;
 const { x, y, width } = figma.viewport.bounds;
 
 figma.showUI(__html__, {
