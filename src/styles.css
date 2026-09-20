@@ -84,6 +84,34 @@ body {
   background: linear-gradient(to bottom, #292929, #3d3d3d);
 }
 
+.help-button:hover {
+  background: linear-gradient(to bottom, #474747, #333333);
+}
+
+.help-button:hover .help-button-inner {
+  background: linear-gradient(to bottom, #333333, #474747);
+}
+
+.help-button:active,
+.input-container.help-open .help-button {
+  background: linear-gradient(to bottom, #515151, #3d3d3d);
+}
+
+.help-button:active .help-button-inner,
+.input-container.help-open .help-button-inner {
+  background: linear-gradient(to bottom, #3d3d3d, #515151);
+}
+
+.input-container.help-open .help-button:hover,
+.input-container.help-open .help-button:active {
+  background: linear-gradient(to bottom, #5c5c5c, #484848);
+}
+
+.input-container.help-open .help-button:hover .help-button-inner,
+.input-container.help-open .help-button:active .help-button-inner {
+  background: linear-gradient(to bottom, #484848, #5c5c5c);
+}
+
 .block-caret {
   top: 7.5px;
   width: 11.048px;
