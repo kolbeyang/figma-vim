@@ -166,25 +166,80 @@ function updateScrollFade() {
 help.addEventListener('scroll', updateScrollFade);
 window.addEventListener('resize', updateScrollFade);
 
+const RESIZE_DURATION = 200;
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+let helpOpen = false;
+let resizeAnimationFrame = null;
+
+function sendResize(width, height) {
+  parent.postMessage({ pluginMessage: { type: 'resize', width, height } }, '*');
+}
+
+function animateWindow(targetWidth, targetHeight, onComplete) {
+  if (resizeAnimationFrame !== null) {
+    cancelAnimationFrame(resizeAnimationFrame);
+    resizeAnimationFrame = null;
+  }
+
+  const startWidth = window.innerWidth;
+  const startHeight = window.innerHeight;
+
+  if (reduceMotion.matches || (startWidth === targetWidth && startHeight === targetHeight)) {
+    sendResize(targetWidth, targetHeight);
+    onComplete();
+    return;
+  }
+
+  const startTime = performance.now();
+  let lastWidth = startWidth;
+  let lastHeight = startHeight;
+
+  function step(now) {
+    const progress = Math.min((now - startTime) / RESIZE_DURATION, 1);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    const width = Math.round(startWidth + (targetWidth - startWidth) * eased);
+    const height = Math.round(startHeight + (targetHeight - startHeight) * eased);
+
+    if (width !== lastWidth || height !== lastHeight) {
+      sendResize(width, height);
+      lastWidth = width;
+      lastHeight = height;
+    }
+
+    if (progress < 1) {
+      resizeAnimationFrame = requestAnimationFrame(step);
+      return;
+    }
+
+    resizeAnimationFrame = null;
+    sendResize(targetWidth, targetHeight);
+    onComplete();
+  }
+
+  resizeAnimationFrame = requestAnimationFrame(step);
+}
+
 function isHelpOpen() {
-  return !helpWrap.classList.contains('hidden');
+  return helpOpen;
 }
 
 function openHelp() {
   if (isHelpOpen()) return;
+  helpOpen = true;
   helpWrap.classList.remove('hidden');
   help.scrollTop = 0;
-  parent.postMessage({ pluginMessage: { type: 'resize', width: HELP_WIDTH, height: HELP_HEIGHT } }, '*');
+  animateWindow(HELP_WIDTH, HELP_HEIGHT, () => {
+    if (helpOpen) updateScrollFade();
+  });
   refreshCaret();
-  // The window resize is async — measure once it has settled
-  requestAnimationFrame(updateScrollFade);
-  setTimeout(updateScrollFade, 100);
 }
 
 function closeHelp() {
   if (!isHelpOpen()) return;
-  helpWrap.classList.add('hidden');
-  parent.postMessage({ pluginMessage: { type: 'resize', width: BASE_WIDTH, height: BASE_HEIGHT } }, '*');
+  helpOpen = false;
+  animateWindow(BASE_WIDTH, BASE_HEIGHT, () => {
+    if (!helpOpen) helpWrap.classList.add('hidden');
+  });
   refreshCaret();
 }
 
