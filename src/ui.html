@@ -59,7 +59,7 @@ function updateCaret() {
   const textWidth = measureCtx.measureText(textBefore).width;
 
   const paddingLeft = parseFloat(getComputedStyle(input).paddingLeft);
-  caret.style.left = (input.offsetLeft + paddingLeft + textWidth) + 'px';
+  caret.style.left = (input.offsetLeft + paddingLeft + textWidth - 1) + 'px';
 }
 
 // Reset blink animation on any activity so caret stays solid while moving
@@ -122,8 +122,8 @@ const SORTED_COMMANDS = [...COMMANDS].sort((a, b) => b.prefix.length - a.prefix.
 // --- Help popover ---
 const HELP_WIDTH = 300;
 const HELP_HEIGHT = 360;
-const BASE_WIDTH = 124;
-const BASE_HEIGHT = 40;
+const BASE_WIDTH = 128;
+const BASE_HEIGHT = 45;
 
 function renderHelp() {
   const rows = [...COMMANDS, ...KEYS];

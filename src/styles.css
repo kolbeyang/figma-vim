@@ -27,12 +27,8 @@ body {
 
 .input-container {
   flex-shrink: 0;
-  padding: 1px 2px 2px;
-  background: #3e3e3e;
-}
-
-.input-container.help-open {
-  background: linear-gradient(to bottom, #3e3e3e, #2c2c2c);
+  padding: 3px 2px 2px;
+  background: #2c2c2c;
 }
 
 #help-wrap {
@@ -41,12 +37,14 @@ body {
 
 .command-bar {
   width: 100%;
-  height: 36px;
-  padding: 4px 6px 4px 10px;
+  height: 40px;
+  padding: 6px 6px 6px 12px;
   overflow: hidden;
   border-radius: 10px;
   background: #1f1f1f;
-  box-shadow: inset 0 1px 4px 2px rgba(0, 0, 0, 0.16);
+  box-shadow:
+    0 0.5px 1px rgba(255, 255, 255, 0.08),
+    inset 0 1px 4px 2px rgba(0, 0, 0, 0.16);
 }
 
 .command-input {
@@ -113,7 +111,7 @@ body {
 }
 
 .block-caret {
-  top: 7.5px;
+  top: 10px;
   width: 11.048px;
   height: 20.5px;
   background: #b3b3b3;
