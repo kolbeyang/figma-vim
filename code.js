@@ -11,7 +11,6 @@ figma.showUI(__html__, {
     y: y + 10,
   },
   title: " ",
-  themeColors: true,
 });
 
 function getAutoLayoutFrames() {
