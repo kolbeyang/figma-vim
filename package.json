@@ -1,0 +1,25 @@
+{
+  "name": "figma-vim",
+  "private": true,
+  "scripts": {
+    "build:css": "npx @tailwindcss/cli -i src/styles.css -o dist/styles.css --minify",
+    "build:ui": "node build.js",
+    "build": "npm run build:css && npm run build:ui",
+    "watch": "node dev.js"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.2.2",
+    "tailwindcss": "^4"
+  },
+  "version": "0.1.0",
+  "description": "A Vim-inspired command palette for Figma",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kolbeyang/figma-vim.git"
+  },
+  "homepage": "https://github.com/kolbeyang/figma-vim#readme",
+  "bugs": {
+    "url": "https://github.com/kolbeyang/figma-vim/issues"
+  }
+}

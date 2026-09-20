@@ -1,0 +1,311 @@
+<html class="h-full">
+<head>
+<style>/* __INJECT_CSS__ */</style>
+</head>
+<body class="h-full font-mono text-xs text-figma-text overflow-hidden">
+
+<div class="flex flex-col w-full h-full">
+  <div class="relative flex items-center shrink-0 h-10">
+    <input
+      id="input"
+      type="text"
+      placeholder="..."
+      autofocus
+      class="px-3 h-full font-mono text-base outline-none bg-figma flex-1 min-w-0 text-neutral-400 caret-transparent"
+    />
+    <div id="caret" class="absolute top-1/2 -translate-y-1/2 translate-x-[2px] pointer-events-none bg-neutral-400 animate-blink font-mono text-base w-[1ch] h-[1.2em]"></div>
+    <button
+      id="help-btn"
+      type="button"
+      title="Commands"
+      class="shrink-0 mr-2 flex items-center justify-center w-5 h-5 rounded-full border border-figma-border text-figma-text-tertiary hover:text-figma-text hover:bg-figma-bg-secondary cursor-pointer text-[11px] leading-none select-none"
+    >?</button>
+  </div>
+
+  <!-- The border lives on the wrapper so the scroll fade cannot mask it -->
+  <div id="help-wrap" class="hidden flex flex-col flex-1 min-h-0 border-t border-figma-border">
+    <div id="help" class="flex-1 min-h-0 overflow-y-auto no-scrollbar scroll-fade px-3 py-2"></div>
+  </div>
+</div>
+
+<script>
+const input = document.getElementById('input');
+const caret = document.getElementById('caret');
+const helpBtn = document.getElementById('help-btn');
+const help = document.getElementById('help');
+const helpWrap = document.getElementById('help-wrap');
+
+// --- Terminal-style block caret ---
+const measureCanvas = document.createElement('canvas');
+const measureCtx = measureCanvas.getContext('2d');
+
+function getInputFont() {
+  const s = getComputedStyle(input);
+  return s.fontWeight + ' ' + s.fontSize + ' ' + s.fontFamily;
+}
+
+function updateCaret() {
+  if (document.activeElement !== input) {
+    caret.style.display = 'none';
+    return;
+  }
+  caret.style.display = 'block';
+
+  measureCtx.font = getInputFont();
+  const textBefore = input.value.slice(0, input.selectionStart);
+  const textWidth = measureCtx.measureText(textBefore).width;
+
+  const paddingLeft = parseFloat(getComputedStyle(input).paddingLeft);
+  caret.style.left = (paddingLeft + textWidth) + 'px';
+}
+
+// Reset blink animation on any activity so caret stays solid while moving
+function resetBlink() {
+  caret.style.animation = 'none';
+  // Force reflow
+  void caret.offsetWidth;
+  caret.style.animation = '';
+}
+
+function refreshCaret() {
+  requestAnimationFrame(() => {
+    updateCaret();
+    resetBlink();
+  });
+}
+
+input.addEventListener('input', refreshCaret);
+input.addEventListener('keydown', refreshCaret);
+input.addEventListener('keyup', refreshCaret);
+input.addEventListener('click', refreshCaret);
+input.addEventListener('focus', refreshCaret);
+input.addEventListener('blur', refreshCaret);
+document.addEventListener('selectionchange', refreshCaret);
+window.addEventListener('resize', refreshCaret);
+
+const COMMANDS = [
+  { prefix: 'g',  needsValue: true,  group: 'Auto-layout', usage: 'g<n>',  desc: 'Gap' },
+  { prefix: 'p',  needsValue: true,  group: 'Auto-layout', usage: 'p<n>',  desc: 'Padding (all sides)' },
+  { prefix: 'px', needsValue: true,  group: 'Auto-layout', usage: 'px<n>', desc: 'Padding left + right' },
+  { prefix: 'py', needsValue: true,  group: 'Auto-layout', usage: 'py<n>', desc: 'Padding top + bottom' },
+  { prefix: 'pl', needsValue: true,  group: 'Auto-layout', usage: 'pl<n>', desc: 'Padding left' },
+  { prefix: 'pr', needsValue: true,  group: 'Auto-layout', usage: 'pr<n>', desc: 'Padding right' },
+  { prefix: 'pt', needsValue: true,  group: 'Auto-layout', usage: 'pt<n>', desc: 'Padding top' },
+  { prefix: 'pb', needsValue: true,  group: 'Auto-layout', usage: 'pb<n>', desc: 'Padding bottom' },
+  { prefix: 'fr', needsValue: false, group: 'Auto-layout', usage: 'fr',    desc: 'Direction → row' },
+  { prefix: 'fc', needsValue: false, group: 'Auto-layout', usage: 'fc',    desc: 'Direction → column' },
+  { prefix: 'x',  needsValue: false, group: 'Auto-layout', usage: 'x',     desc: 'Toggle auto (space-between) gap' },
+  { prefix: 'w',  needsValue: true,  group: 'Sizing',      usage: 'w<n>',  desc: 'Width (fixed)' },
+  { prefix: 'h',  needsValue: true,  group: 'Sizing',      usage: 'h<n>',  desc: 'Height (fixed)' },
+  { prefix: 'wf', needsValue: false, group: 'Sizing',      usage: 'wf',    desc: 'Width → fill' },
+  { prefix: 'wh', needsValue: false, group: 'Sizing',      usage: 'wh',    desc: 'Width → hug' },
+  { prefix: 'hf', needsValue: false, group: 'Sizing',      usage: 'hf',    desc: 'Height → fill' },
+  { prefix: 'hh', needsValue: false, group: 'Sizing',      usage: 'hh',    desc: 'Height → hug' },
+  { prefix: 'r',  needsValue: true,  group: 'Other',       usage: 'r<n>',  desc: 'Corner radius' },
+  { prefix: 'a',  needsValue: false, group: 'Other',       usage: 'a',     desc: 'Toggle absolute positioning' },
+  { prefix: 'q',  needsValue: false, group: 'Other',       usage: 'q',     desc: 'Quit' },
+];
+
+// Extra shortcuts that are not typed commands
+const KEYS = [
+  { group: 'Keys', usage: '←/→', desc: 'Cycle horizontal align (empty input)' },
+  { group: 'Keys', usage: '↑/↓', desc: 'Cycle vertical align (empty input)' },
+  { group: 'Keys', usage: 'space', desc: 'Chain commands, e.g. g16 p8 wf' },
+  { group: 'Keys', usage: 'esc', desc: 'Close plugin' },
+];
+
+const SORTED_COMMANDS = [...COMMANDS].sort((a, b) => b.prefix.length - a.prefix.length);
+
+// --- Help popover ---
+const HELP_WIDTH = 300;
+const HELP_HEIGHT = 360;
+const BASE_WIDTH = 120;
+const BASE_HEIGHT = 40;
+
+function renderHelp() {
+  const rows = [...COMMANDS, ...KEYS];
+  const groups = [];
+  for (const r of rows) {
+    let g = groups.find((x) => x.name === r.group);
+    if (!g) { g = { name: r.group, items: [] }; groups.push(g); }
+    g.items.push(r);
+  }
+
+  let html = '';
+  for (const g of groups) {
+    html += '<div class="mb-2">';
+    html += '<div class="text-figma-text-tertiary uppercase tracking-wide text-[10px] mb-1">' + g.name + '</div>';
+    for (const it of g.items) {
+      html += '<div class="flex items-baseline gap-2 py-[2px]">' +
+        '<span class="shrink-0 w-12 text-cmd">' + escapeHtml(it.usage) + '</span>' +
+        '<span class="text-figma-text-secondary">' + escapeHtml(it.desc) + '</span>' +
+        '</div>';
+    }
+    html += '</div>';
+  }
+  help.innerHTML = html;
+}
+
+function escapeHtml(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// Grow the fade only on the edge that still has content to scroll
+const FADE_SIZE = 20;
+
+function updateScrollFade() {
+  const top = Math.min(FADE_SIZE, help.scrollTop);
+  const bottom = Math.min(
+    FADE_SIZE,
+    help.scrollHeight - help.clientHeight - help.scrollTop
+  );
+  help.style.setProperty('--fade-top', Math.max(0, top) + 'px');
+  help.style.setProperty('--fade-bottom', Math.max(0, bottom) + 'px');
+}
+
+help.addEventListener('scroll', updateScrollFade);
+window.addEventListener('resize', updateScrollFade);
+
+function isHelpOpen() {
+  return !helpWrap.classList.contains('hidden');
+}
+
+function openHelp() {
+  if (isHelpOpen()) return;
+  helpWrap.classList.remove('hidden');
+  help.scrollTop = 0;
+  parent.postMessage({ pluginMessage: { type: 'resize', width: HELP_WIDTH, height: HELP_HEIGHT } }, '*');
+  refreshCaret();
+  // The window resize is async — measure once it has settled
+  requestAnimationFrame(updateScrollFade);
+  setTimeout(updateScrollFade, 100);
+}
+
+function closeHelp() {
+  if (!isHelpOpen()) return;
+  helpWrap.classList.add('hidden');
+  parent.postMessage({ pluginMessage: { type: 'resize', width: BASE_WIDTH, height: BASE_HEIGHT } }, '*');
+  refreshCaret();
+}
+
+function toggleHelp() {
+  if (isHelpOpen()) closeHelp(); else openHelp();
+}
+
+renderHelp();
+
+// Keep focus in the input when the button is pressed
+helpBtn.addEventListener('mousedown', (e) => e.preventDefault());
+helpBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  toggleHelp();
+});
+
+// Click outside the popover closes it
+document.addEventListener('mousedown', (e) => {
+  if (!isHelpOpen()) return;
+  if (helpWrap.contains(e.target) || helpBtn.contains(e.target)) return;
+  closeHelp();
+});
+
+function parseSingle(token) {
+  const s = token.trim().toLowerCase();
+  if (!s) return null;
+
+  for (const c of SORTED_COMMANDS) {
+    if (s === c.prefix && !c.needsValue) return { cmd: c.prefix };
+    if (c.needsValue && s.startsWith(c.prefix) && s.length > c.prefix.length) {
+      const num = parseFloat(s.slice(c.prefix.length));
+      if (!isNaN(num) && num >= 0) return { cmd: c.prefix, value: num };
+    }
+  }
+  return null;
+}
+
+// Parse space-separated commands. Returns array of valid commands,
+// or null if any token failed to parse.
+function parseCommands(raw) {
+  const tokens = raw.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  if (tokens.length === 0) return null;
+
+  const result = [];
+  for (const t of tokens) {
+    const parsed = parseSingle(t);
+    if (!parsed) return null;
+    result.push(parsed);
+  }
+  return result;
+}
+
+input.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    e.preventDefault();
+    // First escape closes the help popover, second closes the plugin
+    if (isHelpOpen()) {
+      closeHelp();
+      return;
+    }
+    parent.postMessage({ pluginMessage: { type: 'close' } }, '*');
+    return;
+  }
+
+  if (input.value === '') {
+    if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      parent.postMessage({ pluginMessage: { type: 'cycle-align', axis: 'horizontal', step: -1 } }, '*');
+      return;
+    }
+    if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      parent.postMessage({ pluginMessage: { type: 'cycle-align', axis: 'horizontal', step: 1 } }, '*');
+      return;
+    }
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      parent.postMessage({ pluginMessage: { type: 'cycle-align', axis: 'vertical', step: -1 } }, '*');
+      return;
+    }
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      parent.postMessage({ pluginMessage: { type: 'cycle-align', axis: 'vertical', step: 1 } }, '*');
+      return;
+    }
+  }
+
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    const cmds = parseCommands(input.value);
+    if (cmds) {
+      // Handle 'q' locally — close plugin, skip backend call
+      if (cmds.some((c) => c.cmd === 'q')) {
+        parent.postMessage({ pluginMessage: { type: 'close' } }, '*');
+        return;
+      }
+      parent.postMessage({ pluginMessage: { type: 'cmd-batch', cmds: cmds } }, '*');
+      input.value = '';
+    }
+    return;
+  }
+});
+
+function grabFocus() { input.focus(); }
+
+document.addEventListener('click', grabFocus);
+document.addEventListener('mousedown', grabFocus);
+window.addEventListener('focus', grabFocus);
+window.addEventListener('blur', () => requestAnimationFrame(grabFocus));
+
+grabFocus();
+window.focus();
+requestAnimationFrame(grabFocus);
+setTimeout(grabFocus, 50);
+setTimeout(grabFocus, 150);
+setTimeout(grabFocus, 300);
+
+// Initial caret positioning once input is focused
+setTimeout(refreshCaret, 50);
+setTimeout(refreshCaret, 200);
+</script>
+
+</body>
+</html>

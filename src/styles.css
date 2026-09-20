@@ -1,0 +1,50 @@
+@import "tailwindcss";
+@source "./ui.html";
+
+@theme {
+  --color-figma-bg: var(--figma-color-bg, #2c2c2c);
+  --color-figma-bg-secondary: var(--figma-color-bg-secondary, #3c3c3c);
+  --color-figma-text: var(--figma-color-text, #e0e0e0);
+  --color-figma-text-secondary: var(--figma-color-text-secondary, #aaa);
+  --color-figma-text-tertiary: var(--figma-color-text-tertiary, #888);
+  --color-figma-border: var(--figma-color-border, #555);
+  --color-figma-blue: #0D99FF;
+  --color-accent: #5b7fb5;
+  --color-cmd: hsl(212 90% 65%);
+  --animate-blink: blink 1s step-end infinite;
+}
+
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  50.01%, 100% { opacity: 0; }
+}
+
+/* Scroll without a visible scrollbar */
+@utility no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Fade the content at each edge that has more to scroll.
+   JS sets --fade-top and --fade-bottom on scroll. */
+@utility scroll-fade {
+  --fade-top: 0px;
+  --fade-bottom: 0px;
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    #000 var(--fade-top),
+    #000 calc(100% - var(--fade-bottom)),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    #000 var(--fade-top),
+    #000 calc(100% - var(--fade-bottom)),
+    transparent 100%
+  );
+}
