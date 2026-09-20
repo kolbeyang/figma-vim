@@ -301,6 +301,21 @@ function parseCommands(raw) {
   return result;
 }
 
+const INVALID_FLASH_DURATION = 300;
+let invalidFlashTimer = null;
+
+function clearInvalidCommand() {
+  inputContainer.classList.remove('invalid-command');
+  clearTimeout(invalidFlashTimer);
+  invalidFlashTimer = null;
+}
+
+function flashInvalidCommand() {
+  clearInvalidCommand();
+  inputContainer.classList.add('invalid-command');
+  invalidFlashTimer = setTimeout(clearInvalidCommand, INVALID_FLASH_DURATION);
+}
+
 input.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     e.preventDefault();
@@ -345,8 +360,11 @@ input.addEventListener('keydown', (e) => {
         parent.postMessage({ pluginMessage: { type: 'close' } }, '*');
         return;
       }
+      clearInvalidCommand();
       parent.postMessage({ pluginMessage: { type: 'cmd-batch', cmds: cmds } }, '*');
       input.value = '';
+    } else if (input.value.trim() !== '') {
+      flashInvalidCommand();
     }
     return;
   }

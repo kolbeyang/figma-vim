@@ -120,6 +120,15 @@ body {
   box-shadow: 0 0 6px rgba(255, 255, 255, 0.5);
 }
 
+.input-container.invalid-command .command-input {
+  color: #eb7a80;
+}
+
+.input-container.invalid-command .block-caret {
+  background: #eb7a80;
+  box-shadow: 0 0 6px rgba(235, 122, 128, 0.5);
+}
+
 @keyframes blink {
   0%, 50% { opacity: 1; }
   50.01%, 100% { opacity: 0; }
