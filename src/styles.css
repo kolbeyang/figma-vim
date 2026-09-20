@@ -64,6 +64,7 @@ body {
 
 .help-button {
   width: 28px;
+  transform-origin: center;
   height: 28px;
   padding: 3px;
   border: 0;
@@ -112,6 +113,7 @@ body {
 
 .block-caret {
   top: 10px;
+  transform-origin: center;
   width: 11.048px;
   height: 20.5px;
   background: #b3b3b3;

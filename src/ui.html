@@ -222,6 +222,27 @@ function animateWindow(targetWidth, targetHeight, onComplete) {
   resizeAnimationFrame = requestAnimationFrame(step);
 }
 
+function playIntroAnimation() {
+  if (!reduceMotion.matches) {
+    const timing = {
+      duration: RESIZE_DURATION,
+      easing: 'cubic-bezier(0.33, 1, 0.68, 1)',
+      fill: 'both',
+    };
+    const scaleFrames = [
+      { transform: 'scale(0.5)' },
+      { transform: 'scale(1)' },
+    ];
+
+    caret.animate(scaleFrames, timing);
+    helpBtn.animate(scaleFrames, timing);
+  }
+
+  animateWindow(BASE_WIDTH, BASE_HEIGHT, () => {});
+}
+
+playIntroAnimation();
+
 function isHelpOpen() {
   return helpOpen;
 }
