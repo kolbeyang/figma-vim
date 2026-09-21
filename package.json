@@ -5,7 +5,7 @@
     "build:css": "npx @tailwindcss/cli -i src/styles.css -o dist/styles.css --minify",
     "build:ui": "node build.js",
     "build": "npm run build:css && npm run build:ui",
-    "test": "node tests/text-alignment.test.js",
+    "test": "node tests/text-commands.test.js",
     "watch": "node dev.js"
   },
   "devDependencies": {

@@ -8,6 +8,16 @@ function createHarness(fonts) {
   const loadedFonts = new Set();
   const notifications = [];
   let alignment = "LEFT";
+  let fontSize = 16;
+
+  function assertFontsLoaded() {
+    for (const font of fonts) {
+      const key = `${font.family}\u0000${font.style}`;
+      if (!loadedFonts.has(key)) {
+        throw new Error("Cannot write to node with unloaded font");
+      }
+    }
+  }
 
   const textNode = {
     type: "TEXT",
@@ -19,13 +29,15 @@ function createHarness(fonts) {
       return alignment;
     },
     set textAlignHorizontal(value) {
-      for (const font of fonts) {
-        const key = `${font.family}\u0000${font.style}`;
-        if (!loadedFonts.has(key)) {
-          throw new Error("Cannot write to node with unloaded font");
-        }
-      }
+      assertFontsLoaded();
       alignment = value;
+    },
+    get fontSize() {
+      return fontSize;
+    },
+    set fontSize(value) {
+      assertFontsLoaded();
+      fontSize = value;
     },
   };
 
@@ -49,6 +61,7 @@ function createHarness(fonts) {
   return {
     figma,
     getAlignment: () => alignment,
+    getFontSize: () => fontSize,
     loadedFonts,
     notifications,
   };
@@ -70,7 +83,16 @@ async function main() {
   assert.equal(harness.getAlignment(), "RIGHT");
   assert.deepEqual(harness.notifications, []);
 
-  console.log("text alignment loads fonts before writing");
+  const sizeHarness = createHarness(fonts);
+  await sizeHarness.figma.ui.onmessage({
+    type: "cmd-batch",
+    cmds: [{ cmd: "t", value: 24 }],
+  });
+  assert.equal(sizeHarness.getFontSize(), 24);
+  assert.equal(sizeHarness.loadedFonts.size, 2);
+  assert.deepEqual(sizeHarness.notifications, []);
+
+  console.log("text commands load fonts before writing");
 }
 
 main().catch((error) => {

@@ -38,6 +38,12 @@ Commands can be chained with spaces: `g16 p8 wf`.
 | `fc` | Set vertical direction |
 | `x` | Toggle space-between gap |
 
+### Text
+
+| Command | Action |
+| --- | --- |
+| `t<n>` | Set font size on selected text layers |
+
 ### Sizing
 
 | Command | Action |

@@ -142,7 +142,7 @@ figma.ui.onmessage = async (msg) => {
   }
 
   if (msg.type === "cmd") {
-    const result = executeCommand(msg.cmd, msg.value);
+    const result = await executeCommand(msg.cmd, msg.value);
     if (result.error) {
       figma.notify(result.message, { error: true });
       return;
@@ -153,7 +153,7 @@ figma.ui.onmessage = async (msg) => {
 
   if (msg.type === "cmd-batch") {
     for (const c of msg.cmds) {
-      const result = executeCommand(c.cmd, c.value);
+      const result = await executeCommand(c.cmd, c.value);
       if (result.error) {
         figma.notify(result.message, { error: true });
         return;
@@ -165,7 +165,38 @@ figma.ui.onmessage = async (msg) => {
 };
 
 // Returns { message, label, error } — label is the short form for batch summary
-function executeCommand(cmd, val) {
+async function executeCommand(cmd, val) {
+  if (cmd === "t") {
+    const textNodes = getSelectedNodes().filter((node) => node.type === "TEXT");
+    if (textNodes.length === 0) {
+      return {
+        message: "No text layer selected",
+        label: "",
+        error: true,
+      };
+    }
+    if (val <= 0) {
+      return {
+        message: "Text size must be greater than zero",
+        label: "",
+        error: true,
+      };
+    }
+
+    try {
+      await loadTextNodeFonts(textNodes);
+      for (const textNode of textNodes) textNode.fontSize = val;
+    } catch (error) {
+      return {
+        message: "Could not update text using its current font",
+        label: "",
+        error: true,
+      };
+    }
+
+    return { message: "Text size → " + val, label: "t" + val };
+  }
+
   // Auto-layout-only commands
   if (cmd === "g") {
     const frames = getAutoLayoutFrames();
