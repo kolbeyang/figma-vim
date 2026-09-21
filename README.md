@@ -59,10 +59,10 @@ Commands can be chained with spaces: `g16 p8 wf`.
 
 ### Keyboard shortcuts
 
-With an empty input, arrow keys cycle alignment on the selected auto-layout frame:
+With an empty input, arrow keys cycle alignment:
 
-- **← / →** — horizontal alignment
-- **↑ / ↓** — vertical alignment
+- **← / →** — text alignment on text layers, or horizontal alignment on auto-layout frames
+- **↑ / ↓** — vertical alignment on auto-layout frames
 - **?** — show command help
 - **Esc** — close command help
 

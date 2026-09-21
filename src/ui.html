@@ -111,7 +111,7 @@ const COMMANDS = [
 
 // Extra shortcuts that are not typed commands
 const KEYS = [
-  { group: 'Keys', usage: '←/→', desc: 'Cycle horizontal align (empty input)' },
+  { group: 'Keys', usage: '←/→', desc: 'Cycle text or horizontal align (empty input)' },
   { group: 'Keys', usage: '↑/↓', desc: 'Cycle vertical align (empty input)' },
   { group: 'Keys', usage: 'space', desc: 'Chain commands, e.g. g16 p8 wf' },
   { group: 'Keys', usage: 'esc', desc: 'Close plugin' },
@@ -124,6 +124,7 @@ const HELP_WIDTH = 300;
 const HELP_HEIGHT = 360;
 const BASE_WIDTH = 128;
 const BASE_HEIGHT = 45;
+const INTRO_HEIGHT = 15;
 
 function renderHelp() {
   const rows = [...COMMANDS, ...KEYS];
@@ -172,13 +173,14 @@ window.addEventListener('resize', updateScrollFade);
 const RESIZE_DURATION = 200;
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 let helpOpen = false;
+let pluginClosing = false;
 let resizeAnimationFrame = null;
 
 function sendResize(width, height) {
   parent.postMessage({ pluginMessage: { type: 'resize', width, height } }, '*');
 }
 
-function animateWindow(targetWidth, targetHeight, onComplete) {
+function animateWindow(targetWidth, targetHeight, onComplete, easing = 'out') {
   if (resizeAnimationFrame !== null) {
     cancelAnimationFrame(resizeAnimationFrame);
     resizeAnimationFrame = null;
@@ -199,7 +201,9 @@ function animateWindow(targetWidth, targetHeight, onComplete) {
 
   function step(now) {
     const progress = Math.min((now - startTime) / RESIZE_DURATION, 1);
-    const eased = 1 - Math.pow(1 - progress, 3);
+    const eased = easing === 'in'
+      ? Math.pow(progress, 3)
+      : 1 - Math.pow(1 - progress, 3);
     const width = Math.round(startWidth + (targetWidth - startWidth) * eased);
     const height = Math.round(startHeight + (targetHeight - startHeight) * eased);
 
@@ -222,23 +226,38 @@ function animateWindow(targetWidth, targetHeight, onComplete) {
   resizeAnimationFrame = requestAnimationFrame(step);
 }
 
+function animateControls(fromScale, toScale, easing) {
+  if (reduceMotion.matches) return;
+
+  const timing = {
+    duration: RESIZE_DURATION,
+    easing,
+    fill: 'both',
+  };
+  const scaleFrames = [
+    { transform: `scale(${fromScale})` },
+    { transform: `scale(${toScale})` },
+  ];
+
+  caret.animate(scaleFrames, timing);
+  helpBtn.animate(scaleFrames, timing);
+}
+
 function playIntroAnimation() {
-  if (!reduceMotion.matches) {
-    const timing = {
-      duration: RESIZE_DURATION,
-      easing: 'cubic-bezier(0.33, 1, 0.68, 1)',
-      fill: 'both',
-    };
-    const scaleFrames = [
-      { transform: 'scale(0.5)' },
-      { transform: 'scale(1)' },
-    ];
-
-    caret.animate(scaleFrames, timing);
-    helpBtn.animate(scaleFrames, timing);
-  }
-
+  animateControls(0.5, 1, 'cubic-bezier(0.33, 1, 0.68, 1)');
   animateWindow(BASE_WIDTH, BASE_HEIGHT, () => {});
+}
+
+function closePluginWithAnimation() {
+  if (pluginClosing) return;
+  pluginClosing = true;
+  animateControls(1, 0.5, 'cubic-bezier(0.32, 0, 0.67, 0)');
+  animateWindow(
+    BASE_WIDTH,
+    INTRO_HEIGHT,
+    () => parent.postMessage({ pluginMessage: { type: 'close' } }, '*'),
+    'in'
+  );
 }
 
 playIntroAnimation();
@@ -345,7 +364,7 @@ input.addEventListener('keydown', (e) => {
       closeHelp();
       return;
     }
-    parent.postMessage({ pluginMessage: { type: 'close' } }, '*');
+    closePluginWithAnimation();
     return;
   }
 
@@ -378,7 +397,7 @@ input.addEventListener('keydown', (e) => {
     if (cmds) {
       // Handle 'q' locally — close plugin, skip backend call
       if (cmds.some((c) => c.cmd === 'q')) {
-        parent.postMessage({ pluginMessage: { type: 'close' } }, '*');
+        closePluginWithAnimation();
         return;
       }
       clearInvalidCommand();

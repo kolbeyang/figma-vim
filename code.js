@@ -28,14 +28,23 @@ function getSelectedNodes() {
   return figma.currentPage.selection.slice();
 }
 
-// Cycle alignment: MIN <-> CENTER <-> MAX
+// Cycle frame alignment: MIN <-> CENTER <-> MAX
 const ALIGN_ORDER = ["MIN", "CENTER", "MAX"];
+const TEXT_ALIGN_ORDER = ["LEFT", "CENTER", "RIGHT"];
+
+function cycleValue(current, order, step) {
+  let idx = order.indexOf(current);
+  if (idx === -1) idx = 0;
+  idx = Math.max(0, Math.min(order.length - 1, idx + step));
+  return order[idx];
+}
 
 function cycleAlign(current, step) {
-  let idx = ALIGN_ORDER.indexOf(current);
-  if (idx === -1) idx = 0;
-  idx = Math.max(0, Math.min(ALIGN_ORDER.length - 1, idx + step));
-  return ALIGN_ORDER[idx];
+  return cycleValue(current, ALIGN_ORDER, step);
+}
+
+function cycleTextAlign(current, step) {
+  return cycleValue(current, TEXT_ALIGN_ORDER, step);
 }
 
 figma.ui.onmessage = (msg) => {
@@ -50,9 +59,22 @@ figma.ui.onmessage = (msg) => {
   }
 
   if (msg.type === "cycle-align") {
+    const selectedNodes = getSelectedNodes();
+    const textNodes = selectedNodes.filter((node) => node.type === "TEXT");
+
+    if (msg.axis === "horizontal" && textNodes.length > 0) {
+      for (const textNode of textNodes) {
+        textNode.textAlignHorizontal = cycleTextAlign(
+          textNode.textAlignHorizontal,
+          msg.step
+        );
+      }
+      return;
+    }
+
     const frames = getAutoLayoutFrames();
     if (frames.length === 0) {
-      figma.notify("No auto-layout frame selected", { error: true });
+      figma.notify("Select a text layer or auto-layout frame", { error: true });
       return;
     }
 
