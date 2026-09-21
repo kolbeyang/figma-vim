@@ -2,6 +2,7 @@
   "name": "Figma Vim",
   "id": "1683961523518775624",
   "api": "1.0.0",
+  "documentAccess": "dynamic-page",
   "main": "code.js",
   "ui": "ui.html",
   "editorType": ["figma"],
