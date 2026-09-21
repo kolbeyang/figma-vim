@@ -47,7 +47,30 @@ function cycleTextAlign(current, step) {
   return cycleValue(current, TEXT_ALIGN_ORDER, step);
 }
 
-figma.ui.onmessage = (msg) => {
+function getTextNodeFonts(textNode) {
+  if (textNode.characters.length > 0) {
+    return textNode.getRangeAllFontNames(0, textNode.characters.length);
+  }
+
+  return textNode.fontName === figma.mixed ? [] : [textNode.fontName];
+}
+
+async function loadTextNodeFonts(textNodes) {
+  const uniqueFonts = new Map();
+
+  for (const textNode of textNodes) {
+    for (const font of getTextNodeFonts(textNode)) {
+      if (!font) continue;
+      uniqueFonts.set(`${font.family}\u0000${font.style}`, font);
+    }
+  }
+
+  await Promise.all(
+    Array.from(uniqueFonts.values(), (font) => figma.loadFontAsync(font))
+  );
+}
+
+figma.ui.onmessage = async (msg) => {
   if (msg.type === "close") {
     figma.closePlugin();
     return;
@@ -63,11 +86,18 @@ figma.ui.onmessage = (msg) => {
     const textNodes = selectedNodes.filter((node) => node.type === "TEXT");
 
     if (msg.axis === "horizontal" && textNodes.length > 0) {
-      for (const textNode of textNodes) {
-        textNode.textAlignHorizontal = cycleTextAlign(
-          textNode.textAlignHorizontal,
-          msg.step
-        );
+      try {
+        await loadTextNodeFonts(textNodes);
+        for (const textNode of textNodes) {
+          textNode.textAlignHorizontal = cycleTextAlign(
+            textNode.textAlignHorizontal,
+            msg.step
+          );
+        }
+      } catch (error) {
+        figma.notify("Could not load a font used by the selected text", {
+          error: true,
+        });
       }
       return;
     }
