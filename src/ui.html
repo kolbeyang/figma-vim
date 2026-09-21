@@ -180,7 +180,13 @@ function sendResize(width, height) {
   parent.postMessage({ pluginMessage: { type: 'resize', width, height } }, '*');
 }
 
-function animateWindow(targetWidth, targetHeight, onComplete, easing = 'out') {
+function animateWindow(
+  targetWidth,
+  targetHeight,
+  onComplete,
+  easing = 'out',
+  onFrame = null
+) {
   if (resizeAnimationFrame !== null) {
     cancelAnimationFrame(resizeAnimationFrame);
     resizeAnimationFrame = null;
@@ -190,10 +196,13 @@ function animateWindow(targetWidth, targetHeight, onComplete, easing = 'out') {
   const startHeight = window.innerHeight;
 
   if (reduceMotion.matches || (startWidth === targetWidth && startHeight === targetHeight)) {
+    if (onFrame) onFrame(targetHeight);
     sendResize(targetWidth, targetHeight);
     onComplete();
     return;
   }
+
+  if (onFrame) onFrame(startHeight);
 
   const startTime = performance.now();
   let lastWidth = startWidth;
@@ -204,8 +213,11 @@ function animateWindow(targetWidth, targetHeight, onComplete, easing = 'out') {
     const eased = easing === 'in'
       ? Math.pow(progress, 3)
       : 1 - Math.pow(1 - progress, 3);
+    const exactHeight = startHeight + (targetHeight - startHeight) * eased;
     const width = Math.round(startWidth + (targetWidth - startWidth) * eased);
-    const height = Math.round(startHeight + (targetHeight - startHeight) * eased);
+    const height = Math.round(exactHeight);
+
+    if (onFrame) onFrame(exactHeight);
 
     if (width !== lastWidth || height !== lastHeight) {
       sendResize(width, height);
@@ -226,37 +238,36 @@ function animateWindow(targetWidth, targetHeight, onComplete, easing = 'out') {
   resizeAnimationFrame = requestAnimationFrame(step);
 }
 
-function animateControls(fromScale, toScale, easing) {
-  if (reduceMotion.matches) return;
-
-  const timing = {
-    duration: RESIZE_DURATION,
-    easing,
-    fill: 'both',
-  };
-  const scaleFrames = [
-    { transform: `scale(${fromScale})` },
-    { transform: `scale(${toScale})` },
-  ];
-
-  caret.animate(scaleFrames, timing);
-  helpBtn.animate(scaleFrames, timing);
+function syncControlsToHeight(height) {
+  const heightProgress = Math.max(
+    0,
+    Math.min(1, (height - INTRO_HEIGHT) / (BASE_HEIGHT - INTRO_HEIGHT))
+  );
+  const scale = 0.5 + heightProgress * 0.5;
+  const transform = `scale(${scale})`;
+  caret.style.transform = transform;
+  helpBtn.style.transform = transform;
 }
 
 function playIntroAnimation() {
-  animateControls(0.5, 1, 'cubic-bezier(0.33, 1, 0.68, 1)');
-  animateWindow(BASE_WIDTH, BASE_HEIGHT, () => {});
+  animateWindow(
+    BASE_WIDTH,
+    BASE_HEIGHT,
+    () => {},
+    'out',
+    syncControlsToHeight
+  );
 }
 
 function closePluginWithAnimation() {
   if (pluginClosing) return;
   pluginClosing = true;
-  animateControls(1, 0.5, 'cubic-bezier(0.32, 0, 0.67, 0)');
   animateWindow(
     BASE_WIDTH,
     INTRO_HEIGHT,
     () => parent.postMessage({ pluginMessage: { type: 'close' } }, '*'),
-    'in'
+    'in',
+    syncControlsToHeight
   );
 }
 
